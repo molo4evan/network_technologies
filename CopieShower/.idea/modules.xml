@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/CopieShower.iml" filepath="$PROJECT_DIR$/.idea/modules/CopieShower.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/CopieShower_main.iml" filepath="$PROJECT_DIR$/.idea/modules/CopieShower_main.iml" group="CopieShower" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/CopieShower_test.iml" filepath="$PROJECT_DIR$/.idea/modules/CopieShower_test.iml" group="CopieShower" />
+    </modules>
+  </component>
+</project>
