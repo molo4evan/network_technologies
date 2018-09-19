@@ -1,7 +1,6 @@
 import OS.Subscriber
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
-import java.awt.GridLayout
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 import javax.swing.JFrame
@@ -9,8 +8,8 @@ import javax.swing.JLabel
 import javax.swing.JTextArea
 
 class GUI(
-        private val info: Updater,
-        private val shower: Sender
+        private val receiver: Updater,
+        private val sender: Sender
 ): JFrame("Copies Shower"), Subscriber {
     val copies = JTextArea(16, 16)
 
@@ -23,10 +22,10 @@ class GUI(
         c.gridx = 0
         c.gridy = GridBagConstraints.RELATIVE
 
-        val addr = JLabel(info.my_addr.hostAddress)
+        val addr = JLabel("Address: ${sender.group}")
         layout.setConstraints(addr, c)
         add(addr)
-        val port = JLabel(info.port.toString())
+        val port = JLabel("Port: ${sender.port}")
         layout.setConstraints(port, c)
         add(port)
         update()
@@ -35,8 +34,8 @@ class GUI(
         pack()
         addWindowListener(object : WindowAdapter(){
             override fun windowClosing(p0: WindowEvent?) {
-                info.interrupt()
-                shower.interrupt()
+                receiver.end = true
+                sender.end = true
                 dispose()
             }
         })
@@ -45,8 +44,8 @@ class GUI(
 
     override fun update() {
         val text = StringBuilder()
-        for (copie in info.copies.keys){
-            text.append(copie.hostAddress).append("\n")
+        for (copy in receiver.copies.keys){
+            text.append(copy.hostAddress).append("\n")
         }
         copies.text = text.toString()
     }

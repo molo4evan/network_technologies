@@ -1,24 +1,29 @@
 import OS.Observable
 import OS.Subscriber
-import java.net.DatagramPacket
-import java.net.InetAddress
-import java.net.MulticastSocket
-import java.net.SocketTimeoutException
+import java.net.*
 
 const val TIME_TO_DEAD = 3000L
 
-class Updater(val my_addr: InetAddress, private val socket: MulticastSocket): Thread(), Observable {
+class Updater(
+        private val group: InetAddress,
+        private val port: Int
+): Thread(), Observable {
     val copies = mutableMapOf<InetAddress, Long>()
-    val port = socket.port
     private val subs = mutableListOf<Subscriber>()
+    var end = false
 
     override fun run() {
+        val socket = MulticastSocket(port)
+        socket.joinGroup(group)
+
         socket.soTimeout = TIME_TO_DEAD.toInt()
         val buffer = ByteArray(15)
         val received = DatagramPacket(buffer, buffer.size)
         while (true){
             try {
+                if (end) return
                 socket.receive(received)
+                if (end) return
                 processCopies(received.data, received.address)
             } catch (ex: SocketTimeoutException) {
                 checkUndeads()
@@ -42,11 +47,10 @@ class Updater(val my_addr: InetAddress, private val socket: MulticastSocket): Th
     }
 
     private fun processCopies(data: ByteArray, newbie: InetAddress){
-        val msg = data.toString()
-        when (msg) {
-            "I'm alive!" -> tryAdd(newbie)
-            "Goodbye" -> tryRemove(newbie)
-            else -> throw Error("Unknown message: $msg")
+        when (data[0]) {
+            ALIVE -> tryAdd(newbie)
+            DEAD -> tryRemove(newbie)
+            else -> throw Error("Unknown message: ${data[0]}")
         }
     }
 
@@ -83,5 +87,9 @@ class Updater(val my_addr: InetAddress, private val socket: MulticastSocket): Th
         for (sub in subs) {
             sub.update()
         }
+        for (copy in copies) {
+            println(copy.key)
+        }
+        println("----------------------")
     }
 }
