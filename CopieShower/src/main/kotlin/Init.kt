@@ -1,15 +1,8 @@
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Insets
-import java.awt.event.ActionListener
-import java.awt.event.ItemEvent
-import java.awt.event.ItemListener
 import java.net.InetAddress
-import java.net.MulticastSocket
-import javax.swing.JButton
-import javax.swing.JCheckBox
-import javax.swing.JFrame
-import javax.swing.JTextField
+import javax.swing.*
 
 class Init: JFrame() {
     init {
@@ -23,33 +16,41 @@ class Init: JFrame() {
         c.gridx = 0
         c.gridy = GridBagConstraints.RELATIVE
 
+        val mult_addr = JLabel("Multicast group:")
+        layout.setConstraints(mult_addr, c)
+        add(mult_addr)
+
         val ins_mult_addr = JTextField(15)
         layout.setConstraints(ins_mult_addr, c)
         add(ins_mult_addr)
+
+        val port = JLabel("Multicast port:")
+        layout.setConstraints(port, c)
+        add(port)
 
         val ins_port = JTextField(7)
         layout.setConstraints(ins_port, c)
         add(ins_port)
 
-        val ins_your_addr = JTextField(15)
-        ins_your_addr.isEnabled = false
+        val ins_your_port = JTextField(7)
+        ins_your_port.isEnabled = false
 
-        val use_user_addr = JCheckBox("Use custom address")
-        use_user_addr.addItemListener { ins_your_addr.isEnabled = use_user_addr.isSelected }
-        layout.setConstraints(use_user_addr, c)
-        add(use_user_addr)
+        val use_user_port = JCheckBox("Use custom send port")
+        use_user_port.addItemListener { ins_your_port.isEnabled = use_user_port.isSelected }
+        layout.setConstraints(use_user_port, c)
+        add(use_user_port)
 
-        layout.setConstraints(ins_your_addr, c)
-        add(ins_your_addr)
+        layout.setConstraints(ins_your_port, c)
+        add(ins_your_port)
 
         val toDispose = this
         val submit = JButton("Submit")
         submit.addActionListener {
             val group = ins_mult_addr.text
-            val port = ins_port.text
-            val addr = ins_your_addr.text
-            val updater = Updater(InetAddress.getByName(group), port.toInt())
-            val sender = Sender(InetAddress.getByName(group), port.toInt(), addr)
+            val remote_port = ins_port.text
+            val my_port = ins_your_port.text
+            val updater = Receiver(InetAddress.getByName(group), remote_port.toInt())
+            val sender = Sender(InetAddress.getByName(group), remote_port.toInt(), my_port)
             val gui = GUI(updater, sender)
             updater.addSub(gui)
             sender.addSub(gui)

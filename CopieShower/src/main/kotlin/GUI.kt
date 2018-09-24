@@ -8,7 +8,7 @@ import javax.swing.JLabel
 import javax.swing.JTextArea
 
 class GUI(
-        private val receiver: Updater,
+        private val receiver: Receiver,
         private val sender: Sender
 ): JFrame("Copies Shower"), Subscriber {
     val copies = JTextArea(16, 16)
@@ -35,7 +35,7 @@ class GUI(
         addWindowListener(object : WindowAdapter(){
             override fun windowClosing(p0: WindowEvent?) {
                 receiver.end = true
-                sender.end = true
+                sender.interrupt()
                 dispose()
             }
         })
@@ -45,7 +45,7 @@ class GUI(
     override fun update() {
         val text = StringBuilder()
         for (copy in receiver.copies.keys){
-            text.append(copy.hostAddress).append("\n")
+            text.append(copy.first.hostAddress).append(":").append(copy.second).append("\n")
         }
         copies.text = text.toString()
     }

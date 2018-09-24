@@ -12,23 +12,21 @@ const val DEAD = 0.toByte()
 class Sender(
         val group: InetAddress,
         val port: Int,
-        private var addr: String
-): Thread(), Observable {
+        private var my_port: String
+): Observable, Thread() {
     private val subs = mutableListOf<Subscriber>()
-    var end = false
 
     override fun run() {
-        val socket = if (addr == ""){
-            DatagramSocket()
-        } else {
-            DatagramSocket(InetSocketAddress(addr, port))
+        val socket = DatagramSocket(null)
+        if (my_port != ""){
+            socket.bind(InetSocketAddress(my_port.toInt()))
         }
         val datagram = DatagramPacket(byteArrayOf(ALIVE), 1, group, port)
         while (true) {
             try {
-                if (end) break
+                if (isInterrupted) break
                 socket.send(datagram)
-                if (end) break
+                if (isInterrupted) break
                 Thread.sleep(TIME_TO_SEND)
             } catch (ex: InterruptedException) {
                 break

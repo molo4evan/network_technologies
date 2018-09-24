@@ -2,41 +2,43 @@ import OS.Observable
 import OS.Subscriber
 import java.net.*
 
-const val TIME_TO_DEAD = 3000L
+const val TIME_TO_DIE = 3000
 
-class Updater(
+class Receiver(
         private val group: InetAddress,
         private val port: Int
 ): Thread(), Observable {
-    val copies = mutableMapOf<InetAddress, Long>()
+    val copies = mutableMapOf<Pair<InetAddress, Int>, Long>()
     private val subs = mutableListOf<Subscriber>()
     var end = false
 
     override fun run() {
         val socket = MulticastSocket(port)
         socket.joinGroup(group)
-
-        socket.soTimeout = TIME_TO_DEAD.toInt()
-        val buffer = ByteArray(15)
+        socket.soTimeout = TIME_TO_DIE
+        val buffer = ByteArray(1)
         val received = DatagramPacket(buffer, buffer.size)
         while (true){
             try {
-                if (end) return
+                if (isInterrupted) break
                 socket.receive(received)
-                if (end) return
-                processCopies(received.data, received.address)
+                if (isInterrupted) break
+                processCopies(received.data, received.address, received.port)
             } catch (ex: SocketTimeoutException) {
                 checkUndeads()
             }
         }
-
+        socket.close()
     }
 
     private fun checkUndeads(){
         val cmp_point = System.currentTimeMillis()
+        println("Current time: $cmp_point")
         var changed = false
         for (copy in copies) {
-            if (copy.value - cmp_point > TIME_TO_DEAD) {
+            val difference = cmp_point - copy.value
+            println("${copy.key.first.hostAddress}:${copy.key.second} age is $difference")
+            if (difference > TIME_TO_DIE) {
                 copies.remove(copy.key)
                 changed = true
             }
@@ -46,28 +48,30 @@ class Updater(
         }
     }
 
-    private fun processCopies(data: ByteArray, newbie: InetAddress){
+    private fun processCopies(data: ByteArray, newbie_addr: InetAddress, newbie_port: Int){
         when (data[0]) {
-            ALIVE -> tryAdd(newbie)
-            DEAD -> tryRemove(newbie)
+            ALIVE -> tryAdd(newbie_addr, newbie_port)
+            DEAD -> tryRemove(newbie_addr, newbie_port)
             else -> throw Error("Unknown message: ${data[0]}")
         }
     }
 
-    private fun tryAdd(addr: InetAddress){
-        if (!copies.containsKey(addr)) {
-            copies[addr] = System.currentTimeMillis()
+    private fun tryAdd(addr: InetAddress, port: Int){
+        val check = Pair(addr, port)
+        if (!copies.containsKey(check)) {
+            copies[check] = System.currentTimeMillis()
             checkUndeads()
             notifySubs()
         } else {
-            copies[addr] = System.currentTimeMillis()
+            copies[check] = System.currentTimeMillis()
             checkUndeads()
         }
     }
 
-    private fun tryRemove(addr: InetAddress){
-        if (copies.containsKey(addr)) {
-            copies.remove(addr)
+    private fun tryRemove(addr: InetAddress, port: Int){
+        val toDelete = Pair(addr, port)
+        if (copies.containsKey(toDelete)) {
+            copies.remove(toDelete)
             checkUndeads()
             notifySubs()
         } else {
