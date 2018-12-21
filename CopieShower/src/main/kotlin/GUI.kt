@@ -44,8 +44,10 @@ class GUI(
 
     override fun update() {
         val text = StringBuilder()
-        for (copy in receiver.copies.keys){
-            text.append(copy.first.hostAddress).append(":").append(copy.second).append("\n")
+        synchronized(receiver.copies) {
+            for (copy in receiver.copies.keys) {
+                text.append(copy.first.hostAddress).append(":").append(copy.second).append("\n")
+            }
         }
         copies.text = text.toString()
     }

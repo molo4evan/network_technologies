@@ -23,9 +23,13 @@ class Receiver(
                 if (isInterrupted) break
                 socket.receive(received)
                 if (isInterrupted) break
-                processCopies(received.data, received.address, received.port)
+                synchronized(copies) {
+                    processCopies(received.data, received.address, received.port)
+                }
             } catch (ex: SocketTimeoutException) {
-                checkUndeads()
+                synchronized(copies) {
+                    checkUndeads()
+                }
             }
         }
         socket.close()
@@ -33,15 +37,16 @@ class Receiver(
 
     private fun checkUndeads(){
         val cmp_point = System.currentTimeMillis()
-        println("Current time: $cmp_point")
         var changed = false
+        val toDelete = mutableListOf<Pair<InetAddress, Int>>()
         for (copy in copies) {
-            val difference = cmp_point - copy.value
-            println("${copy.key.first.hostAddress}:${copy.key.second} age is $difference")
-            if (difference > TIME_TO_DIE) {
-                copies.remove(copy.key)
+            if (cmp_point - copy.value > TIME_TO_DIE) {
+                toDelete.add(copy.key)
                 changed = true
             }
+        }
+        for (key in toDelete){
+            copies.remove(key)
         }
         if (changed) {
             notifySubs()
@@ -91,8 +96,10 @@ class Receiver(
         for (sub in subs) {
             sub.update()
         }
-        for (copy in copies) {
-            println(copy.key)
+        synchronized(copies) {
+            for (copy in copies) {
+                println(copy.key)
+            }
         }
         println("----------------------")
     }

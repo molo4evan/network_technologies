@@ -1,0 +1,1 @@
+data class YandexAnswer(val code: String, val lang: String)

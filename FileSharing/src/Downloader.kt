@@ -21,27 +21,34 @@ class Downloader(private val socket: Socket): Thread() {
         val input = DataInputStream(socket.getInputStream())
         val output = DataOutputStream(socket.getOutputStream())
         val buffer = ByteArray(BUFFER_SIZE)
+        socket.soTimeout = TIME_TO_WAIT
 
-        val name_size = input.readInt()
-        if (name_size > MAX_FILENAME_LENGTH) {
-            socket.close()
-            return
-        }
+        val filename: String
+        val file_size: Long
+        try {
+            val name_size = input.readInt()
+            if (name_size > MAX_FILENAME_LENGTH) {
+                socket.close()
+                return
+            }
 
-        if (input.read(buffer, 0, name_size) != name_size) {
-            println("Incorrect filename receiving")
-            socket.close()
-            return
-        }
-        val filename = String(buffer.sliceArray(0 until name_size), Charset.forName("UTF-8"))
-        val file_size = input.readLong()
-        if (file_size > MAX_FILE_SIZE) {
+            if (input.read(buffer, 0, name_size) != name_size) {
+                println("Incorrect filename receiving")
+                socket.close()
+                return
+            }
+            filename = String(buffer.sliceArray(0 until name_size), Charset.forName("UTF-8"))
+            file_size = input.readLong()
+            if (file_size > MAX_FILE_SIZE) {
+                socket.close()
+                return
+            }
+        } catch (ex: TimeoutException) {
             socket.close()
             return
         }
 
         header = filename
-
         println("$header: File size - ${file_size.toDouble() / 1024} KB")
 
         val file = File("./uploads/$filename")
@@ -50,7 +57,6 @@ class Downloader(private val socket: Socket): Thread() {
         }
         file.createNewFile()
         val writer = FileOutputStream(file)
-        socket.soTimeout = TIME_TO_WAIT
         val speedometer = Speeder(this)
         speedometer.start()
         while (received_size < file_size) {

@@ -1,0 +1,5 @@
+package server.errorhandling.exceptions
+
+import server.errorhandling.ErrorHandler
+
+class NotSupportedFormatException: ServerException(ErrorHandler.ErrorType.NOT_SUPPORTED)

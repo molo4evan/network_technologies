@@ -5,6 +5,7 @@ import java.net.InetSocketAddress
 import java.net.Socket
 import java.nio.ByteBuffer
 import java.nio.charset.Charset
+import java.util.concurrent.TimeoutException
 
 class Client(private val filepath: String, private val address: String, private val port: Int): Thread() {
     override fun run() {
@@ -37,7 +38,13 @@ class Client(private val filepath: String, private val address: String, private 
                 size = reader.read(buf_array, 0, MSG_SIZE)
             }
 
-            val answer_size = input.read(buf_array, 0, MSG_SIZE)
+            socket.soTimeout = 3000
+            try {
+                val answer_size = input.read(buf_array, 0, MSG_SIZE)
+            } catch (ex: TimeoutException) {
+                println("Upload error: no answer from server")
+                return
+            }
             if (String(buf_array.sliceArray(0 until 2), Charset.forName("UTF-8")) != "OK") {
                 println("Upload error: incorrect server answer")
             } else {
